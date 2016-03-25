@@ -1,0 +1,84 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=width=device-width, minimum-scale=0.5, maximum-scale=4.0, initial-scale=1.0">
+<!-- <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0"> -->
+<title>CanvasTest</title>
+<script type="text/javascript" src="./lib/MasterInclude.js"></script>
+<script language="jscript" type="text/javascript">
+<!--
+
+	// 毎度おなじみ、Frame Per Second。
+	// 1秒間に、何回画像を更新したいかを表す定数。
+	// デフォルトは60。定数として使用
+	const FPS = 60;
+	
+	// FPS から計算される、再描画のインターバル時間(単位はミリ秒)。
+	IntervalFromFPS = 1000 / FPS;
+
+
+		
+		lastDrawDate = new Date();
+	
+	function drawingHandler() {
+		
+		// console.log("drawingHandler Started");
+		
+		var date = new Date();
+		var actualInterval = date.getTime() - lastDrawDate.getTime();
+		
+		// console.log("Gap time is :" + (date - lastDrawDate));
+		
+		if (actualInterval >= IntervalFromFPS) {
+			
+			drawCells(actualInterval, false);
+			lastDrawDate = date;
+			}
+		
+		// console.log("Calling next");
+		
+		window.requestAnimationFrame(drawingHandler);
+	
+		}
+//-->
+</script>
+
+</head>
+<!-- bodyのmarginを0にする。そうしないと、キャンバスで画面全体を覆えない -->
+<body style="position:absolute; top:0; right:0; bottom:0; left:0; background:#808080;">
+	<!-- キャンバスを作成。この時指定したスタイルは http://tenderfeel.xsrv.jp/css/1247/ を参照-->
+	<div style="width:320px; height:480px; position:absolute; top:50%; left:50%; margin:-240px 0 0 -160px;">
+	<canvas id="canvas1" width="320" height="480" onClick="drawingHandler()" style="background:#000000"></canvas>
+	</div>
+    	<script language="jscript" type="text/javascript">
+		createCells();
+		alert("Body Open");
+		
+		// キャンバスへの参照を取得し、初期化
+		var myCanvas = document.getElementById("canvas1");
+		
+		// このキャンバスに、イベントリスナを追加
+		myCanvas.addEventListener("click", reviveCell, false); // PC 用
+		myCanvas.addEventListener("touchstart", reviveCell, false); // スマホ用
+		
+
+		
+		// 最後に、関数 drawingHandler の、
+		// 最初の一回をここからトリガー。あとは、
+		// この drawingHandler 自身が、最後に自身をトリガーすることで
+		// 処理を続けてくれる
+		window.requestAnimationFrame(drawingHandler);
+		
+	</script>
+    	<!--なお、body内にスクリプトを書く場合、そのスクリプトでhtml要素をいじるなら、
+        そのhtml要素より下の行でスクリプトを書かないと、
+        ページが開いた際の初期化時にスクリプトが起動しない。注意-->
+</body>
+</html>
+<!--	// ウィンドウサイズぴったりに変形させる
+		// 参考サイト http://qiita.com/tyfkda/items/d1c650786bce6ff825b1
+		// myCanvas.style.width = window.innerWidth + 'px';
+		// myCanvas.style.height = window.innerHeight + 'px';
+		// myCanvas.width = window.innerWidth * window.devicePixelRatio;
+		// myCanvas.height = window.innerHeight * window.devicePixelRatio;	-->
