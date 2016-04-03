@@ -1,0 +1,845 @@
+﻿<?xml version="1.0"?>
+<doc>
+<assembly>
+<name>
+TriCryptTest
+</name>
+</assembly>
+<members>
+<member name="T:TriCryptTest.BirthID">
+ <summary>
+ 各ディヴァイスに一意的に与えられるID、BirthID(バースID)の諸機能を担当するクラス。
+ BirthidはDateEncrypterで生成される15~18桁の数字(以下これを『ディヴァイスカードのシリアルID』と呼称)と、
+ 作成者が打ち込む任意のパスワードから生成されるidである。
+ シリアルIDとパスワードを、それぞれ10バイトの数列に変換後、それらのバイト配列にトライシャッフルを行う。
+ (三重シャッフル=ディールシャッフル、フラップシャッフル、リフルシャッフルを特定の順序で行うシャッフル操作)
+ このトライシャッフル後の10byteの配列を、各アドレスごとにそれぞれxor演算を行うことで導き出される。
+ バースIDにに対しては、トライシャッフル後のパスワードでxor演算を行い、逆トライシャッフルをかけると、
+ DateEncrypterの素数積が戻ってくる。
+ その素数積がディヴァイス・カードや.oddファイルに記載された素数積と同じであれば、
+ そのパスワードは正しい≒パスワードを知っている、そのディヴァイスの作成者、と同定できる。
+ 上記のような機能を果たす目的で、birthIDは作られる。
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.GenerateBirthID(System.Decimal,System.String)">
+ <summary>
+ 入力されたシリアルIDとパスワードから、バースIDを生成する関数
+ </summary>
+ <param name="serialID">シリアルID</param>
+ <param name="password">パスワード</param>
+ <returns>バースID</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DecryptSerialIDFromBirthIDAndPassword(System.String,System.String)">
+ <summary>
+ バースIDとパスワードを組み合わせて、シリアルIDを復元する関数。
+ そのバースIDとパスワードの組み合わせが正しければ、正しいシリアルIDが復元される
+ </summary>
+ <param name="birthID">バースID</param>
+ <param name="password">パスワード</param>
+ <returns></returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.MakeInputAs20Degree(System.Decimal)">
+ <summary>
+ 入力された整数が20桁未満である場合、20桁になるよう
+ 数字の左端に"0"を追加し、返却する関数
+ </summary>
+ <param name="input">20桁未満の整数</param>
+ <returns>20桁になった整数の文字列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.Split20DegreeDigitTo10Byte(System.String)">
+ <summary>
+ 20桁の整数の文字列を10byteの配列にして返却する関数
+ </summary>
+ <param name="input">20桁の10進法の整数</param>
+ <returns>10byteの配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.MakePasswordAs10ByteArray(System.String)">
+ <summary>
+ 入力されたパスワードをUTF-8文字コーディングによる10バイトの配列に変換する関数。
+ もし入力された文字列をバイト配列に変換して10バイト未満なら、直後に"255"の要素をセパレータとして追加し、
+ そして10バイトになるまで入力値の繰り返し→セパレータ追加→……という処理を行う。
+ (例:入力値が"ABC"だったとする。文字列"ABC"はUTF-8のバイト配列に換算すると41,42,43。
+ ここにセパレータの255を挟みながら10バイトの配列にするので、最終的な結果は
+ 41,42,43,255,41,42,43,255,41,42となる)
+ 
+ </summary>
+ <param name="password"></param>
+ <returns></returns>
+ <remarks>UTF-8では0xFE(=254(10))、0xFF(=255(10))というバイト数は使わないので、
+ 255という数字をセパレータに用いてもOK。
+ 入力されるパスワードの想定は「10文字以下の半角記号と英数字」だが、
+ 理論上漢字の文字列をパスワードとして使用することも可能</remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.ExecuteTriShuffle(System.Byte[])">
+ <summary>
+ バイト配列をシャッフルし、対クラッカー撹乱を行う「トライシャッフル」を実行。
+ トライシャッフルは、ディールシャッフル、フラップシャッフル、リフルシャッフルの3つのシャッフルから成る。
+ これらを実行する順序、および各シャッフルのオプションはkeyNumberによって決定される。
+ keyNumberは、入力されたバイト配列の合計値で決まる。
+ バイト配列の並び順がどのように変わっても、その合計値は変わらないことを利用し、
+ そのシャッフルパターンを一意的に同定する。
+ </summary>
+ <param name="targetArray">トライシャッフルを行いたいバイト配列</param>
+ <returns>バイト配列にトライシャッフルを行った結果</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.GetSumOfByteArray(System.Byte[])">
+ <summary>
+ 入力されたバイト配列について、各要素の合計値を返却する関数
+ </summary>
+ <param name="targetArray">合計を求めたいバイト配列</param>
+ <returns>バイト配列の合計値</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoXorOperationTo2Arrays(System.Byte[],System.Byte[])">
+ <summary>
+ 入力された二つのバイト配列について、同じアドレスの要素同士を抜き出し、
+ xor演算した結果を返却する関数
+ </summary>
+ <param name="targetByte1">xor演算の対象となる配列1</param>
+ <param name="targetByte2">xor演算の対象となる配列2</param>
+ <returns>xor演算された配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.GetSeparetedByteString(System.Byte[])">
+ <summary>
+ 入力されたバイト配列を文字列に変換し、すべてを連結。
+ 更に、その連結された文字列について、5文字ごとにセパレータの"-"を挟んで返却する関数
+ </summary>
+ <param name="targetArray">文字列化したいバイト配列</param>
+ <returns>セパレータを挟まれた16進数の文字列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DecryptByteArrayOfBirthID(System.String)">
+ <summary>
+ 入力されたバースIDから、セパレーターの"-"を取り除き、20桁の16進数を取得。
+ これらをそれぞれ2桁ごとのペアにし、それを1バイトの数字に変換して、10バイトの配列を得る
+ </summary>
+ <param name="birthID">バースID</param>
+ <returns>10バイトの配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.ExecuteReversedTriShuffle(System.Byte[])">
+ <summary>
+ 「トライシャッフル」を逆順で実行するメソッド。
+ 逆ディールシャッフル、逆フラップシャッフル、逆リフルシャッフルの3つのシャッフルを、
+ keyNumberをもって、逆順で実行する
+ </summary>
+ <param name="targetArray">逆トライシャッフルを行いたいバイト配列</param>
+ <returns>トライシャッフルから復元されたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.GetDecimalFromByteArray(System.Byte[])">
+ <summary>
+ 入力されたバイト配列を16進数に変換し、その結果を文字列として連結。
+ 最後にdecimal型として返却するメソッド
+ </summary>
+ <param name="targetArray">数値の生成元となる配列</param>
+ <returns>連結された数値</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoDealShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ 一つ目の引数となったバイト配列に対し、「ディールシャッフル」を行う。
+ バイト配列をカードの束に見立て、バイト配列をいくつかの束に配り分ける。
+ 最後にそれをまとめ直すことで、シャッフルは終わる。
+ この際、「束」をいくつにするかは、入力されたkeyNumberを5で割った剰余+2で決める。
+ (最低でも束は2つ作るため)
+ </summary>
+ <param name="targetByteArray">シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">束をいくつ作るかを決めるキー番号</param>
+ <returns>ディールシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoReversedDealShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ DoDealShuffleToByteArrayメソッドでシャッフルされたバイト配列を、
+ 再び元の並びに復元する関数。行っている操作は、同メソッドの逆転バージョン
+ </summary>
+ <param name="targetByteArray">逆シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">束をいくつ作るかを決めるキー番号</param>
+ <returns>元通りに並んだバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoFlapShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ 一つ目の引数となったバイト配列に対し、「フラップシャッフル」を行う。
+ 「フラップシャッフル」とは、入力されたバイト配列のある1点を分岐点として配列を二分割し、
+ それぞれの配列の並び順を逆転させるシャッフル方法を指す造語。
+ 分岐点は、入力された(バイト配列の長さ*分岐変数)\10に等しいアドレスとなる。
+ 分岐変数は、(keyNumber Mod 7) + 2で決定する。
+ たとえば、長さ10の配列に対し、分岐変数=5でフラップシャッフルを行うと、
+ (0)~(5)と、(6)~(9)までに二分割される。これらの並び順をそれぞれ入れ替えることで、
+ フラップシャッフルは達成される。この場合、結果は次の通りとなる。
+ 1,2,3,4,5,6,7,8,9,10→6,5,4,3,2,1,10,9,8,7
+ </summary>
+ <param name="targetByteArray">シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">配列をどこで二分割するか決めるキー番号</param>
+ <returns>フラップシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoReversedFlapShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ DoFlapShuffleToByteArrayメソッドでシャッフルされたバイト配列を、
+ 再び元の並びに復元する関数。
+ フラップシャッフルはその性質上、同じkeyNumberで同操作をもう一度行えば配列の復元ができるので、
+ 実はこの中味はもう一度DoFlapShuffleToByteArrayメソッドを呼び出しているだけ
+ </summary>
+ <param name="targetByteArray">逆シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">配列をどこで二分割するか決めるキー番号</param>
+ <returns>元通りに並んだバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoRiffleShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ 一つ目の引数となったバイト配列に対し、「リフルシャッフル」を行う。
+ バイト配列をカードの束に見立て、バイト配列を前後で二分割。
+ その二分割した束を、前の束を起点として、互い違いに組み合わせていく。
+ なお、このメソッドの内部ではリフルシャッフルを(keyNumber Mod 3)+1回繰り返すので、
+ リフルシャッフル本体の処理は別のprivateメソッドに切り出す
+ </summary>
+ <param name="targetByteArray">リフルシャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">リフルシャッフルを行う回数を決めるキー番号</param>
+ <returns>リフルシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoRiffleShuffleBody(System.Byte[])">
+ <summary>
+ リフルシャッフルの処理の実体部分。DoRiffleShuffleToByteArrayメソッドから用いられる
+ </summary>
+ <param name="targetByteArray">リフルシャッフルを行いたい対象のバイト配列</param>
+ <returns>リフルシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoReversedRiffleShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ DoRiffleShuffleToByteArrayメソッドでシャッフルされたバイト配列を、
+ 再び元の並びに復元する関数。行っている操作は、同メソッドの逆転バージョン。
+ やはりリフルシャッフル本体の処理は、別のprivateメソッドに切り出す
+ </summary>
+ <param name="targetByteArray">逆シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">逆リフルシャッフルを行う回数を決めるキー番号</param>
+ <returns>元通りに並んだバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.BirthID.DoReversedRiffleShuffleBody(System.Byte[])">
+ <summary>
+ 逆リフルシャッフルの処理の実体部分。DoReversedRiffleShuffleToByteArrayメソッドから用いられる
+ </summary>
+ <param name="targetByteArray">逆リフルシャッフルを行いたい対象のバイト配列</param>
+ <returns>逆リフルシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="T:TriCryptTest.ByteArrayEncrypter">
+ <summary>
+ バイト配列に対し、可逆的な変化を加えることでその内容を暗号化/復号化するクラス。
+ 現在のところ、バイト配列をカードの束に見立てて、3種類のシャッフル方法で並び順を変化させる
+ 「トライシャッフル(Tri-shuffle)」法と、
+ 外部から入力されたタイムスタンプを利用して、各バイト配列に7回のXor演算を行い暗号化する
+ 「ヘプタプルゾール(Heptaple Xor)法」の、2種類の暗号化方法が存在する。
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.ExecuteTriShuffle(System.Byte[],System.Decimal)">
+ <summary>
+ バイト配列をシャッフルし、対クラッカー撹乱を行う「トライシャッフル」を実行。
+ トライシャッフルは、ディールシャッフル、フラップシャッフル、リフルシャッフルの3つのシャッフルから成る。
+ これらを実行する順序、および各シャッフルのオプションはkeyNumberによって決定される。
+ keyNumberは、入力されたバイト配列の合計値で決まる。
+ バイト配列の並び順がどのように変わっても、その合計値は変わらないことを利用し、
+ そのシャッフルパターンを一意的に同定する。
+ </summary>
+ <param name="targetArray">トライシャッフルを行いたいバイト配列</param>
+ <param name="keyNumber">トライシャッフルを行う際、細かいオプション指定に使うキーナンバー</param>
+ <returns>バイト配列にトライシャッフルを行った結果</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoDealShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ 一つ目の引数となったバイト配列に対し、「ディールシャッフル」を行う。
+ バイト配列をカードの束に見立て、バイト配列をいくつかの束に配り分ける。
+ 最後にそれをまとめ直すことで、シャッフルは終わる。
+ この際、「束」をいくつにするかは、入力されたkeyNumberを5で割った剰余+2で決める。
+ (最低でも束は2つ作るため)
+ </summary>
+ <param name="targetByteArray">シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">束をいくつ作るかを決めるキー番号</param>
+ <returns>ディールシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoFlapShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ 一つ目の引数となったバイト配列に対し、「フラップシャッフル」を行う。
+ 「フラップシャッフル」とは、入力されたバイト配列のある1点を分岐点として配列を二分割し、
+ それぞれの配列の並び順を逆転させるシャッフル方法を指す造語。
+ 分岐点は、入力された(バイト配列の長さ*分岐変数)\10に等しいアドレスとなる。
+ 分岐変数は、(keyNumber Mod 7) + 2で決定する。
+ たとえば、長さ10の配列に対し、分岐変数=5でフラップシャッフルを行うと、
+ (0)~(5)と、(6)~(9)までに二分割される。これらの並び順をそれぞれ入れ替えることで、
+ フラップシャッフルは達成される。この場合、結果は次の通りとなる。
+ 1,2,3,4,5,6,7,8,9,10→6,5,4,3,2,1,10,9,8,7
+ </summary>
+ <param name="targetByteArray">シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">配列をどこで二分割するか決めるキー番号</param>
+ <returns>フラップシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoRiffleShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ 一つ目の引数となったバイト配列に対し、「リフルシャッフル」を行う。
+ バイト配列をカードの束に見立て、バイト配列を前後で二分割。
+ その二分割した束を、前の束を起点として、互い違いに組み合わせていく。
+ なお、このメソッドの内部ではリフルシャッフルを(keyNumber Mod 3)+1回繰り返すので、
+ リフルシャッフル本体の処理は別のprivateメソッドに切り出す
+ </summary>
+ <param name="targetByteArray">リフルシャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">リフルシャッフルを行う回数を決めるキー番号</param>
+ <returns>リフルシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoRiffleShuffleBody(System.Byte[])">
+ <summary>
+ リフルシャッフルの処理の実体部分。DoRiffleShuffleToByteArrayメソッドから用いられる
+ </summary>
+ <param name="targetByteArray">リフルシャッフルを行いたい対象のバイト配列</param>
+ <returns>リフルシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.ExecuteReversedTriShuffle(System.Byte[],System.Decimal)">
+ <summary>
+ 「トライシャッフル」を逆順で実行するメソッド。
+ 逆ディールシャッフル、逆フラップシャッフル、逆リフルシャッフルの3つのシャッフルを、
+ keyNumberをもって、逆順で実行する
+ </summary>
+ <param name="targetArray">逆トライシャッフルを行いたいバイト配列</param>
+ <param name="keyNumber">逆トライシャッフルを行う際、細かいオプション指定に使うキーナンバー</param>
+ <returns>トライシャッフルから復元されたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoReversedDealShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ DoDealShuffleToByteArrayメソッドでシャッフルされたバイト配列を、
+ 再び元の並びに復元する関数。行っている操作は、同メソッドの逆転バージョン
+ </summary>
+ <param name="targetByteArray">逆シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">束をいくつ作るかを決めるキー番号</param>
+ <returns>元通りに並んだバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoReversedFlapShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ DoFlapShuffleToByteArrayメソッドでシャッフルされたバイト配列を、
+ 再び元の並びに復元する関数。
+ フラップシャッフルはその性質上、同じkeyNumberで同操作をもう一度行えば配列の復元ができるので、
+ 実はこの中味はもう一度DoFlapShuffleToByteArrayメソッドを呼び出しているだけ
+ </summary>
+ <param name="targetByteArray">逆シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">配列をどこで二分割するか決めるキー番号</param>
+ <returns>元通りに並んだバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoReversedRiffleShuffleToByteArray(System.Byte[],System.Int32)">
+ <summary>
+ DoRiffleShuffleToByteArrayメソッドでシャッフルされたバイト配列を、
+ 再び元の並びに復元する関数。行っている操作は、同メソッドの逆転バージョン。
+ やはりリフルシャッフル本体の処理は、別のprivateメソッドに切り出す
+ </summary>
+ <param name="targetByteArray">逆シャッフルを行いたい対象のバイト配列</param>
+ <param name="keyNumber">逆リフルシャッフルを行う回数を決めるキー番号</param>
+ <returns>元通りに並んだバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoReversedRiffleShuffleBody(System.Byte[])">
+ <summary>
+ 逆リフルシャッフルの処理の実体部分。DoReversedRiffleShuffleToByteArrayメソッドから用いられる
+ </summary>
+ <param name="targetByteArray">逆リフルシャッフルを行いたい対象のバイト配列</param>
+ <returns>逆リフルシャッフルが行われたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.ExecuteHeptapleXor(System.Byte[],System.DateTime)">
+ <summary>
+ 外部から入力されたタイムスタンプをキーとして、七重のXor演算を行いバイト配列を暗号化する。
+ キーとするのは、Xor演算に使う順に列挙して、秒数、分数、時間数、日数、月数、年数の下2桁、
+ 年数の上2桁。
+ これらの数を8bit=1byteに伸張し、その伸張された1バイトで、暗号化対象となるバイト配列の各要素に、
+ Xor演算を行っていく
+ </summary>
+ <param name="targetArray">暗号化をかけたいバイト配列</param>
+ <param name="keyDateTime">暗号化のキーとなるタイムスタンプ</param>
+ <returns>暗号化されたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.Generate7BytesFromTimeStamp(System.DateTime,TriCryptTest.ByteArrayEncrypter.ByteFromTimeStampOrder)">
+ <summary>
+ 受け取ったタイムスタンプから、7つのバイト数を生成して返却するメソッド。
+ 同時にそのバイト配列が昇順か降順かを決めること。
+ </summary>
+ <param name="keyDateTime">キーとなるタイムスタンプ</param>
+ <param name="TimeOrder">バイト配列を時間単位で見た昇順か降順、どちらで並べるかのオプション</param>
+ <returns>タイムスタンプから生成された長さ7のバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.ExtendTimeUnitNumberTo1Byte(System.Int32,TriCryptTest.ByteArrayEncrypter.DemandedBitForTimeUnit)">
+ <summary>
+ 入力された時間の値、およびその単位から1バイトの値を生成し返却するメソッド。
+ その時間単位を表すのに何ビット必要かを元に、8ビット(=1バイト)以上の長さになるよう、
+ そのビット配列を繰り返し、これにより出来たビット配列の先頭8ビットで、1バイトの値を生成する。
+ </summary>
+ <param name="timeUnitNumber">入力された時間の値</param>
+ <param name="demandedBit">入力された時間の単位</param>
+ <returns>入力された時間とその単位から生成された1バイトの値</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.DoXorOperationToByteArray(System.Byte[],System.Byte)">
+ <summary>
+ 最初の引数に取られたバイト配列の各要素に対し、二番目の引数に指定されたバイト数で
+ Xor演算を実行するメソッド。
+ </summary>
+ <param name="OperatedArray">Xor演算を行う対象のバイト配列</param>
+ <param name="OperandByte">バイト配列のXor演算に使う右辺オペランド</param>
+ <returns>Xor演算後のバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.ExecuteReversedHeptapleXor(System.Byte[],System.DateTime)">
+ <summary>
+ ヘプタプルゾール法により暗号化されたバイト配列に、逆ヘプタプルゾール法をかけて復号化するメソッド。
+ 内容は、Xor演算を逆順に行うところ以外は、正順のヘプタプルゾール法と同じ
+ </summary>
+ <param name="targetArray">復号化をかけたいバイト配列</param>
+ <param name="keyDateTime">復号化のキーとなるタイムスタンプ(暗号化時と同じものを使うこと)</param>
+ <returns>復号化されたバイト配列</returns>
+ <remarks></remarks>
+</member>
+<member name="T:TriCryptTest.ByteArrayEncrypter.DemandedBitForTimeUnit">
+ <summary>
+ 各時間単位を表すのに必要なビット数を表した列挙体。
+ 例えば秒数の場合、最大値は59。2^5＜59＜2^6より、秒数を表すには6ビットが必要。
+ よって秒数の値は6、などと指定されている
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="T:TriCryptTest.ByteArrayEncrypter.ByteFromTimeStampOrder">
+ <summary>
+ 時間単位より生成したバイト配列を、どのような順番で並べるかを決める列挙体。
+ SECOND_TO_YEARなら、秒数から生成したバイト→分数から生成したバイト→……
+ →年数の下2桁から生成したバイト、→年数の上2桁から生成したバイト、の順となる。
+ YEAR_TO_SECONDならこの逆
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ByteArrayEncrypter.ExtendBitString(System.String,System.Int32)">
+ <summary>
+ ビット配列を表す文字列について、配列が指定された桁数を持つまで、左側に0を追加するメソッド
+ </summary>
+ <param name="originalBitString">桁数を増やしたいビット配列</param>
+ <param name="DemandedDegree">0を追加した後の桁数</param>
+ <returns>所定の桁数を持つビット配列</returns>
+ <remarks>なお、入力されたビット配列の桁数よりも小さい桁数が指定された場合、
+ 入力値をそのまま返却する</remarks>
+</member>
+<member name="T:TriCryptTest.DateEncrypter.DateEncrypter">
+ <summary>
+ YYYY/MM/DD/hh:mm:ss形式の時刻を、素数を利用した暗号に変更するクラス。
+ エラトステネスのふるいアルゴリズムを用いて素数を動的に捜索して、
+ その素数をキーに暗号を作成する。
+ こうして生成された暗号を、ディヴァイスカードのシリアルIDとして利用する
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.MakeDateDataMappingForPrimeNumbers">
+ <summary>
+ 各素数と、年月日時分秒のそれぞれ値をマッピングする
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.GenerateSerialIDFromDate(System.DateTime)">
+ <summary>
+ 入力された年月日時分秒から、シリアルIDを生成するメソッド。
+ シリアルIDは各年月日時分秒の数値に対応するようマッピングされた素数の積を文字列化し、
+ 更に文字列の配列を逆転させ、最後にリフルシャッフルを行うことで生成する
+ </summary>
+ <param name="seedDate">シリアルIDのシードとなる年月日時分秒</param>
+ <returns>生成されたシリアルID</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.DecryptDateFromSerialID(System.Decimal)">
+ <summary>
+ 入力されたシリアルIDから、年月日時分秒を復元するメソッド。
+ シリアルIDはまず文字列に読み替えられ、逆リフルシャッフル→文字列逆転で素数積の形に復元され、
+ 最後に素数積の素因数分解から6つの素数を得て、対応するマッピングの年月日時分秒を取得する
+ </summary>
+ <param name="serialID">年月日時分秒を復元させるシリアルID</param>
+ <returns>復元された年月日時分秒</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.DoRiffleShuffleToString(System.String)">
+ <summary>
+ シリアルIDにリフルシャッフルを行う関数。
+ BirthidクラスのDoRiffleShuffleToByteArrayメソッドを流用。
+ 複数回リフルシャッフルを行いたいなら、繰り返し用いること
+ </summary>
+ <param name="targetString">リフルシャッフルを行いたい対象の文字列</param>
+ <returns>リフルシャッフルが行われた文字列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.DoReversedRiffleShuffleToString(System.String)">
+ <summary>
+ 逆リフルシャッフルの処理の実体部分。
+ やはりBirthidクラスのDoReversedRiffleShuffleToByteArrayメソッドを流用。
+ </summary>
+ <param name="targetString">逆リフルシャッフルを行いたい対象の文字列</param>
+ <returns>逆リフルシャッフルが行われた文字列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.EncryptToMultipledDateData(System.DateTime)">
+ <summary>
+ 入力された年月日時分秒のデータをもとに、
+ それぞれの値に対応した素数を呼び出し、乗算する関数
+ </summary>
+ <param name="inputDate">暗号化したい年月日時分秒のデータ</param>
+ <returns>なお、アルゴリズム簡略化の目的で、世界協定時刻は不使用</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.DecryptFromMultipledDateData(System.Decimal)">
+ <summary>
+ 年月日時分秒から生成された素数の積を、再び年月日時分秒に戻す関数
+ </summary>
+ <param name="MultipledDateData">年月日時分秒から生成された素数の積</param>
+ <returns>復号された年月日時分秒</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.DateEncrypter.DateEncrypter.DetectMappedDateElement(System.Int32)">
+ <summary>
+ 入力された素数が、このクラスにマッピングされたどの年月日時分秒と紐付いているかを
+ 解析し、返却する関数。
+ 返却形式はString(1)で、一つ目の要素に"Second","Minute","Hour","Day","Month","Year"の
+ いずれかが入り、二つ目の要素にその数値が入る。
+ 入力値が素数でないか、素数であってもこのクラスにマッピングされていない場合、
+ "NoData","-1"が格納された配列が返る
+ </summary>
+ <param name="primeNumber">紐付け先を知りたい素数</param>
+ <returns>紐付けされた年月日時分秒のデータ</returns>
+ <remarks></remarks>
+</member>
+<member name="T:TriCryptTest.EratosthenesSieve">
+ <summary>
+ エラトステネスのふるいアルゴリズムによる、素数走査クラス
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.EratosthenesSieve.SetScanningNumbers(System.Int32)">
+ <summary>
+ 整数を最高いくつまでセットするかを決めるメソッド。
+ 別メソッドで、素数判定を行うので、ここでは初期値のセットのみ。
+ </summary>
+ <param name="maxNumber"></param>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.EratosthenesSieve.DoPrimeNumberCheck">
+ <summary>
+ エラトステネスのふるいアルゴリズムで、素数の抜き出しを行う。
+ なお、配列のカウント開始番号は0なので、_Numbersのlength-1の数字が、
+ 操作すべき最大の整数値であることに注意
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.EratosthenesSieve.GetPrimeNumbers">
+ <summary>
+ 現在このクラスに格納されている素数を、配列にして返却する
+ </summary>
+ <returns></returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.EratosthenesSieve.GetPrimeNumberByOrder(System.Int32)">
+ <summary>
+ 入力された序列の素数を返す関数。
+ 例えば"1"と入力すると、1番目の素数である2が返り、"3"と入力すると3番目の素数である5が返る。
+ このクラスが保持している最大の素数を超えた序列が指定された場合、
+ もしくは0以下の数字が入力された場合、-1が返る。
+ 例えば、このクラスが素数を100個しか保持していない状況で、第101番目の素数を指定した場合は、
+ -1が返る。
+ </summary>
+ <param name="demandedOrder">素数の序列(1以上を入力)</param>
+ <returns>指定した序列にある素数</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.EratosthenesSieve.GetOrderOfPrimeNumber(System.Int32)">
+ <summary>
+ 入力された素数が、第何番目の序列かを教える関数。
+ 例えば"2"と入力した場合、2は1番目の素数なので1が返る。
+ "5"と入力した場合、5は3番目の素数なので3が返る。
+ このクラスが保持している最大の素数の序列を上回る数字を入力した場合や、
+ 素数以外の数字を入力した場合、-1が返る
+ </summary>
+ <param name="namedNumber">任意の素数</param>
+ <returns>その素数の序列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.EratosthenesSieve.DecompositeNumber(System.Decimal)">
+ <summary>
+ 入力された数値を素因数分解し、その結果発見された因数を配列として返却する関数。
+ このクラスにより、「素数である」というフラグが立っている数字でのみ素因数分解を試みることで、
+ アルゴリズムの高速化を図っている
+ </summary>
+ <param name="targetNumber">素因数分解</param>
+ <returns>素因数分解された数値の配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.Form1.ExecuteButton_Click(System.Object,System.EventArgs)">
+ <summary>
+ これまで開発した暗号化ソフトの最終結果をテストする
+ </summary>
+ <param name="sender"></param>
+ <param name="e"></param>
+ <remarks></remarks>
+</member>
+<member name="T:TriCryptTest.HexaCrypt.HexaCrypt">
+ <summary>
+ UTF-8コーディングの文字を、6進法の暗号化された数列に変換する、
+ "HexaCrypt"法の暗号化・復号化を実行するクラス。
+ </summary>
+ <remarks>このあたりに存在する各種コメントなども、完成後は削除予定</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexaCrypt.#ctor">
+ <summary>
+ コンストラクタで行う処理は特になし
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexaCrypt.encryptStringToD6String(System.String)">
+ <summary>
+ 文字列の暗号化を行うメソッド。
+ 受け取った文字列を、それぞれUTF-8のバイト数列に変換する
+ </summary>
+ <param name="encryptingString">暗号化したい文字列</param>
+ <returns>D6進数のユニットに変換され、連結された文字列</returns>
+ <remarks>仕様変更。この段階でユニットに格納するのは生のバイト数とし、
+ このバイト配列の暗号化はByteArrayEncrypterクラスに一任する:2013/08/14</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexaCrypt.decryptStringFromD6String(System.String)">
+ <summary>
+ HexaCrypt法で生成された暗号を、復号化するメソッド。
+ </summary>
+ <param name="HexaCrypticalString">D6進数を連結してできた文字列</param>
+ <returns>復号化された文字列</returns>
+ <remarks>仕様変更。このメソッドに持たせる機能は、暗号化されていない状態の
+ D6進数の配列とする*2013/08/14</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexaCrypt.ConvertTwo12BitsInto3Bytes(System.String,System.String)">
+ <summary>
+ 6進法2ユニットぶんのデータを連結し、24bit=3byteの配列に変換する関数
+ </summary>
+ <param name="former12Bits">連結を行う前半の12bit(0と1からなる文字列であること)</param>
+ <param name="latter12Bits">連結を行う後半の12bit(0と1からなる文字列であること)</param>
+ <returns>連結され生成された3バイトの配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexaCrypt.Convert3BytesTo2HexalNumberUnits(System.Byte[])">
+ <summary>
+ 3byte=24bitの数列を12bit*2パートに分け、分割した2パートをそれぞれ4桁のD6進数に変換する関数
+ </summary>
+ <param name="_3Bytes">D6進数に変換したいバイト配列(3Byte)</param>
+ <returns>変換されたD6進数2ユニットぶんを表すString配列</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexaCrypt.ConvertD6StringToBytes(System.String)">
+ <summary>
+ D6進数のユニットを表す文字列を、等価のバイト配列に変換するメソッド。
+ このメソッド内で、ConvertTwo12BitsInto3Bytes()を用いている
+ </summary>
+ <param name="D6Digits">D6進数のユニットを表す文字列</param>
+ <returns>2ユニット→3バイトに変換され、連結されたバイト配列</returns>
+ <remarks>なお、入力された文字列について、D6進数のユニット数に換算して奇数個しかない場合、
+ 3バイトに変換するうちの後半12ビットには、D6進数で、10進数の255に相当する文字列を用いる</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexaCrypt.ConvertBytesToD6String(System.Byte[])">
+ <summary>
+ バイト配列を、D6進数のユニットを表す文字列に変換するメソッド。
+ このメソッド内で、Convert3BytesTo2HexalNumberUnits()を用いている
+ </summary>
+ <param name="originalBytes">D6進数に変換したいバイト配列</param>
+ <returns>3バイト→2ユニットに変換され、連結されたD6進数の文字列</returns>
+ <remarks></remarks>
+</member>
+<member name="T:TriCryptTest.HexaCrypt.HexalNumber">
+ <summary>
+ 6進法クラス。10進法の1バイト(8bit)の数値を、6進法の4bitとして扱う。
+ 以降、このクラス内では、この4bitの6進法の数の塊を「1ユニット」と呼称する。
+ (なお、正負の符号は共に考えないので、扱う数値は正の数のみ)
+ このクラスの中には、4つのintegerを格納するローカル変数のみがメンバ変数として存在する。
+ このメンバ変数は0~5の数字のみを受け付ける。
+ アドレスが(0)である数値が最大の桁、(3)である桁が最小の桁、という表し方である。
+ (つまり、このローカル変数の配列が、このクラスの表す6進法の数値の各桁の値を管理している)
+ 受け取った10進法の数値を6進法にしたり、6進法の数値を逆に10進法に戻したりするのは、メソッドに一任。
+ 内部計算では、原則10進法を用いて計算している。
+ </summary>
+ <remarks>なお、内部的な計算で使う数値は0~5。1~6ではないので注意！
+ 以降、0~5の数字を使う表現方法を「6進法」、1~6の数字を使う表現方法を「D6進法」と呼称する
+ (D6=6 face Dice=6面体サイコロ、の意)</remarks>
+</member>
+<member name="P:TriCryptTest.HexaCrypt.HexalNumber.HexalNumber">
+ <summary>
+ このクラスと同名のプロパティは、1ユニット=4bitの6進法数列を文字列として返却する。
+ (返却値はD6進数ではない！　注意！)
+ </summary>
+ <value></value>
+ <returns>このクラスに格納された6進法の1ユニット</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.SetDecimalNumber(System.Byte)">
+ <summary>
+ 10進数の数値を入力し、それを6進数に変換して内部的に保存するセッター
+ </summary>
+ <param name="decimalNumber">10進法で表されたバイト数(</param>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.DecimalByteToHexalUnit(System.Byte)">
+ <summary>
+ 10進法の1バイト(8bit)の数値を、6進法の4ビット=1ユニットの数値に変換する
+ </summary>
+ <param name="decimalNumber"></param>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.HexalUnitToDecimalByte">
+ <summary>
+ このインスタンスに現在記録されている6進法の4ビット=1ユニットの数値を、
+ 10進法の1バイト(8bit)の数値に変換して返却する
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.SetHexalNumberFromString(System.String)">
+ <summary>
+ このクラスのメンバ変数に、外部からD6進数の数を入力してセットするメソッド。
+ ただしここで入力可能なのは4桁の整数のみで、かつそれらに使える値は1~6のみという制限がある
+ </summary>
+ <param name="HexalUnit">セットしたいD6進数の数値</param>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.GetHexalNumberAsD6Digits">
+ <summary>
+ 現在このクラスに登録された4bitの6進数について、
+ 各桁の数字に1を足し、D6進数として変換した結果を文字列として返却する。
+ (例:0123→1234など)
+ </summary>
+ <returns></returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.ShiftToLeft(System.Int32)">
+ <summary>
+ このユニット内の数字を、指定された数だけ左にシフトさせる。
+ 左端にかかった数字は、右端に移動する。
+ たとえば"1234"というユニットについて、1つ左シフトした場合、その結果は
+ "2341"となる。
+ </summary>
+ <param name="ShiftingNumber">左シフトを行わせたい桁数</param>
+ <remarks>引数は0~3を指定することを推奨</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.ShiftToRight(System.Int32)">
+ <summary>
+ そのユニット内の数字を、指定された数だけ右にシフトさせる。
+ 右端にかかった数字は、左端に移動する。
+ たとえば"1234"というユニットについて、1つ右シフトした場合、その結果は
+ "4123"となる。
+ </summary>
+ <param name="ShiftingNumber">右シフトを行わせたい桁数</param>
+ <remarks>引数は0~3を指定することを推奨</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.IncreaseFirstBitValue(System.Object)">
+ <summary>
+ 6進法の1ユニットにおける、最初の1bit目の数値を増加させるメソッド。
+ HexaCrypt法で暗号化された1byteの整数は、6進法の1ユニット目が必ず1か2になるが、
+ この性質がクラッカーに対するヒントになる危険性がある。
+ そこで、1ユニット目の数字に0~5の数字を追加し、ハッカーに対する「迷彩」をかける目的で、
+ このメソッドを作成する
+ </summary>
+ <param name="AddingNumber"></param>
+ <remarks>引数は0~5を指定することを推奨</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.DecreaseFirstBitValue(System.Object)">
+ <summary>
+ 6進法の1ユニットにおける、最初の1bit目の数値を減少させるメソッド。
+ HexaCrypt法で暗号化された1byteの整数は、6進法の1ユニット目が必ず1か2になるが、
+ この性質がクラッカーに対するヒントになる危険性がある。
+ そこで、1ユニット目の数字に0~5の数字を追加し、ハッカーに対する「迷彩」をかける目的で、
+ このメソッドを作成する。
+ なお、この作業で「オーバーフロー」が起こった場合は、数字は最大値の5に戻る
+ </summary>
+ <param name="AddingNumber"></param>
+ <remarks>引数は0~5を指定することを推奨</remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.ValidateHexalNumber(System.String)">
+ <summary>
+ D6進数のバリデーション。
+ もし入力値が以下の2条件を共に満たさない場合、falseが返る。
+ 1.入力値の文字数は4文字である
+ 2.入力された文字はすべて1~6の数字のみである
+ </summary>
+ <param name="HexalUnit">検証を行いたい文字列</param>
+ <returns>検証結果</returns>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.HexaCrypt.HexalNumber.ConvertTo12Bits(System.Boolean)">
+ <summary>
+ 現在このクラスの保持している6進数D6進数に変換し、12bitの数列として返却する関数。
+ そもそも6進法orD6進数の1桁は、冗長性を無くせば2進法の3bitで表現できる。(3ビットなら0~7の数字を表現可)
+ そしてこのクラスに格納できる6進法は4桁より、3bit×4=12bitで表現できる。
+ なお、返却される3*4bitは、原則1~6を表す3bitを返却する。
+ 0~5を表す3bitを返却してほしいときは、引数にfalseを指定すること
+ (例:このクラスに"0123"という数値が格納されていた場合、これのD6進数表現である"1234"を内部的に生成。
+ そして1を表す"001"、2を表す"010"、3を表す"011"、4を表す"100"が連結された12bit、
+ "001010011100"が返却される。
+ 引数にfalseが指定されていた場合、"0123"を表す12bit、"000001010011"が返却される
+ </summary>
+ <returns>現在保持されたD6進数1ユニットぶんを表す12bitの文字列</returns>
+ <remarks></remarks>
+</member>
+<member name="T:TriCryptTest.My.Resources.Resources">
+<summary>
+  ローカライズされた文字列などを検索するための、厳密に型指定されたリソース クラスです。
+</summary>
+</member>
+<member name="P:TriCryptTest.My.Resources.Resources.ResourceManager">
+<summary>
+  このクラスで使用されているキャッシュされた ResourceManager インスタンスを返します。
+</summary>
+</member>
+<member name="P:TriCryptTest.My.Resources.Resources.Culture">
+<summary>
+  厳密に型指定されたこのリソース クラスを使用して、すべての検索リソースに対し、
+  現在のスレッドの CurrentUICulture プロパティをオーバーライドします。
+</summary>
+</member>
+<member name="T:TriCryptTest.ODDManager">
+ <summary>
+ ORIGIN DeviceCreatorで作成されたデータを保存するバイナリを操作するためのクラス。
+ DeviceCreatorのデータはバイナリ形式で保存し、その拡張子はオリジナルの".odd"である。
+ (odd=ORIGIN Device Dataの意)
+ StreamLineをフル活用することになるので注意！:2013/08/10
+ </summary>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ODDManager.CreateODDFile(System.Byte[],System.String,System.String)">
+ <summary>
+ .odd形式のバイナリを作成するメソッド。
+ </summary>
+ <param name="binarizedData">バイナリ化されたディヴァイスのデータ(Hexacryptクラスで作成すること)</param>
+ <param name="fileName">.oddファイルに与える名前。通常、ディヴァイスの名称と同一とすること</param>
+ <param name="directory">.oddファイルを置く場所</param>
+ <remarks></remarks>
+</member>
+<member name="M:TriCryptTest.ODDManager.ReadODDFile(System.String)">
+ <summary>
+ .odd形式のバイナリからバイト配列を読み込むメソッド
+ </summary>
+ <param name="filePath">指定されたファイルのパス</param>
+ <returns></returns>
+ <remarks></remarks>
+</member>
+</members>
+</doc>

@@ -7,48 +7,48 @@ Created by Yuichi WATANABE
 ----------------
 
 *******
-1. �T��
+1. 概説
 *******
 
-���̃t�@�C���ɂ́A  �𗘗p���č쐬���ꂽ�Q�[���A
-�uCosmic Barrage!�v�̎��s�t�@�C���A��� PDF �A����у\�[�X�R�[�h����������Ă��܂��B
+このファイルには、 Java を利用して作成されたゲーム、
+「Cosmic Barrage!」の実行ファイル、解説 PDF 、およびソースコードが同梱されています。
 
-cosmicbarrage		Eclipse �𗘗p���č쐬���ꂽ�uCosmic Barrage!�v�̃v���W�F�N�g�t�@�C���ł��B
-			�uCosmic Barrage!�v�̃\�[�X�R�[�h���܂܂�Ă��܂��B
-			���@�v���W�F�N�g�Ǘ���̎�Ⴂ�ŁA�\�[�X�R�[�h�����̃R�����g�͕����������N�����Ă���܂��B
-			���ꂵ���ċ��k�ł����A�����ɂȂ�ꍇ�͂��̓_���������������B
+cosmicbarrage		Eclipse を利用して作成された「Cosmic Barrage!」のプロジェクトファイルです。
+			「Cosmic Barrage!」のソースコードが含まれています。
+			※　プロジェクト管理上の手違いで、ソースコード内部のコメントは文字化けを起こしております。
+			見苦しくて恐縮ですが、ご覧になる場合はその点ご了承ください。
 
-CosmicBarrage.jar	�uCosmic Barrage!�v�̎��s�\ Jar �t�@�C���ł��B
-			������� Java.exe �Ȃǂ𗘗p���ċN�����Ă��������B
+CosmicBarrage.jar	「Cosmic Barrage!」の実行可能 Jar ファイルです。
+			こちらを Java.exe などを利用して起動してください。
 
-readme.txt		���̃t�@�C���ł��B
+readme.txt		このファイルです。
 
-���.pdf		�uCosmic Barrage!�v�̓��e�⑀����@�Ȃǂ��܂Ƃ߂� PDF �t�@�C���ł��B
-			�Ō�̃y�[�W�ɂ́A�U���̃q���g�������Ă���܂��B
-
-********************************
-2. �uCosmic Barrage!�v�̋N�����@
-********************************
-
-�ڍׂ͓����̉��.pdf �t�@�C�����������������B
+解説.pdf		「Cosmic Barrage!」の内容や操作方法などをまとめた PDF ファイルです。
+			最後のページには、攻略のヒントが書いてあります。
 
 ********************************
-3. �uCosmic Barrage!�v�̏I�����@
+2. 「Cosmic Barrage!」の起動方法
 ********************************
 
-Java Swing �̉E��ɏo�Ă���u�~�v�{�^�����N���b�N���Ă��������B
+詳細は同梱の解説.pdf ファイルをご覧ください。
+
+********************************
+3. 「Cosmic Barrage!」の終了方法
+********************************
+
+Java Swing の右上に出てくる「×」ボタンをクリックしてください。
 
 ***********
-4. �Ɛӎ���
+4. 免責事項
 ***********
 
-�{�v���O�����́A�M�҂̃v���O���~���O�X�L�����v���[���e�[�V�������邱�Ƃ�ړI�Ɍ��J���Ă���܂��B
-�t�@�C���̎��s�E�\�[�X�R�[�h�Ȃǂ̉{���͎��R�ɍs���Ă��������܂����A
-���̍ێ��s�����}�V����Ŕ��������s��Ȃǂɂ��ẮA�ƐӂƂ����Ă��������܂��B���̓_���������������B
+本プログラムは、筆者のプログラミングスキルをプレゼンテーションすることを目的に公開しております。
+ファイルの実行・ソースコードなどの閲覧は自由に行っていただけますが、
+その際実行したマシン上で発生した不具合などについては、免責とさせていただきます。その点ご了承ください。
 
 *********
-5. ���쌠
+5. 著作権
 *********
 
-�{�t�@�C�����̊e��v���O�����╶���Ȃǂ̒��쌠�͕M�҂ɑ����܂��B
-�{�t�@�C�����̃v���O�����ɂ��āA�񎟔z�z�Ȃǂ��������̏ꍇ�́A�M�҂ɂ���񂭂������B
+本ファイル内の各種プログラムや文書などの著作権は筆者に属します。
+本ファイル内のプログラムについて、二次配布などをご検討の場合は、筆者にご一報ください。
