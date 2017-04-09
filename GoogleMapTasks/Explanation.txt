@@ -1,0 +1,83 @@
+This file describes how I thought and solve the tasks.
+
+Task1. Plot restaurants across any place you like in Japan. 
+
+The answer is made as "task1.html" file.
+
+I determined to pick up Tokyo station in Japan as a sample direction of these tasks.
+I used PlacesService of Google Maps API, and executed textSearch() to find the restaurants around Tokyo Station.
+The keyword for query is "ƒŒƒXƒgƒ‰ƒ“", which means "restaurant" in Japanese.
+
+Task2. Each restaurant will have at least 1 food specialty.
+
+The answer is made as "task2.html" file.
+
+In order to grab the specification of google.maps.places.PlaceResult,
+I tried to dump the Place result with JSON.Stringify() function and read the technical documents.
+Finally I found this document, which describes about PlaceType.
+
+https://developers.google.com/places/supported_types?hl=en
+
+I assumed "restaurant" you said in mail as "facility and building for taking meal",
+not "facility which is given 'restaurant' PlaceType".
+
+And so, I added if statement in createMarker() function.
+If the place does not have 1 or more types in "bakery", "bar", "cafe", "food" or "restaurant",
+It is taken as that it has no food specialty.
+(I believe taking "bakery", "bar", "cafe", "food" and "restaurant" as "food specialty/specialties"
+is a reasonable assumption)
+
+Task3. A layer panel can filter the restaurant type to show.
+
+The answer is made as "task3.html" file.
+
+I confirmed the specification of Layer in Google Maps in this page.
+
+https://developers.google.com/maps/documentation/javascript/examples/?hl=en#layers
+
+I could not find the layer which is useful to filter the restaurants.
+(Perhaps it can be implemented technically, but I could not find a good example of implementation in time)
+
+Therefore I took an alternative way to filter the restaurants.
+I created 5 buttons("filter ****" button) under the map.
+When these buttons are clicked, filterMarkers() function is executed.
+And the function sets visibility of each markers, according to the type of restaurants.
+
+If "reset" button is pushed, all the markers will be visible again.
+
+Task4. Each restaurant can keep track of the number of customers that visited.
+
+Unfortunately, I could not make an answer for this task because of technical issue.
+Please let me explain the reason why I judged so.
+
+The information of Place which is available in the API is described below.
+
+https://developers.google.com/maps/documentation/javascript/reference?hl=en#PlaceResult
+
+I read this document and confirmed the data dumped from JSON.stringify() function.
+Even if getDetails() function is used and the data is fetched,
+there is no properties which counts the track of number.
+In other words, getDetails() function is not effective to get the cutomer track.
+
+I have thought that Popular Times feature of google map could be an alternative mean.
+(That feature indicates the time and popultaion as a figure)
+But as of now, it seems that the API for Popular Times is not published officially.
+
+https://issuetracker.google.com/issues/35827350
+
+These are the result of my research and why I concluded there is some technical issues.
+
+Task5. Customers can get direction to the restaurant from current location.
+
+The answer is made as "task5.html" file.
+
+In order to simplify the system, I assumed that the restaurant as a destination is fixed.
+I implemented the functions which puts a marker on origin(current location fetched by getCurrentPosition() function).
+Then by calcRoute() function, the route from origin to destination is displayed.
+
+Task6. Draw a circle or rectangle on the map and and show the number of restaurants within the circle or rectangle.
+
+The answer is made as "task6.html" file.
+
+By google.maps.Circle, a circle with radius of 1000 meters will be put on the map, whose center is tokyo station.
+When the circle is clicked, the number of restaurant in that circle will be displayed by infoWindow.

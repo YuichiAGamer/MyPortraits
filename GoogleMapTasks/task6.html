@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			#map {
+				height: 400px;
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<h3>Map around Tokyo Station</h3>
+		<div id="map"></div><!-- Here the map is added by Javascript below -->
+		<script>
+
+            /* defines "map" and "infoWindow" variable at here, in order to keep the scope for multiple functions.  */
+            var map;
+            var infoWindow;
+            var radius = 1000; // assumes radius is 100 meters.
+            var circle;
+
+            /* These variables are also needed to retrieve the data in callback functions. */
+            var detailedInfo;
+
+            function initMap() {
+                console.log("initMap() executing");
+
+				/* Defines the latitude(north/south) and the longitude(east/west) */
+				var tokyoStation = {lat: 35.681265, lng: 139.767051};
+				/* Instantiates the map with some variables */
+				map = new google.maps.Map(
+					document.getElementById('map'),
+					{ zoom: 14, center: tokyoStation });
+
+                /* Creates Infowindow to display the information of each marker.
+                When each marker is put, the function will be implemented */
+				infoWindow = new google.maps.InfoWindow();
+
+			    /* In order to execute a searching for restaurant, PlacesService is effective.
+                To execute this, prepare the request contents defined by json style */
+				var restaurantRequest = { location: tokyoStation, radius: radius, query: 'ƒŒƒXƒgƒ‰ƒ“' };
+
+                /* Instantiates service and executes */
+				var service = new google.maps.places.PlacesService(map);
+				service.textSearch(restaurantRequest, callbackTextSearch); // callback function is defined below
+
+                /* Draws a circle with 1000 meters radius */
+				circle = new google.maps.Circle({
+				    strokeColor: '#FF0000',
+				    strokeOpacity: 0.8,
+				    strokeWeight: 1,
+				    fillColor: '#FF0000',
+				    fillOpacity: 0.35,
+				    map: map,
+				    center: tokyoStation,
+				    radius: radius
+				});
+
+			    /* See below to confirm the detailed specification of PlacesService:
+                https://developers.google.com/maps/documentation/javascript/reference?hl=ja#PlacesService */
+
+			}
+
+            /* receives the result of textSearch() in "results" and "status" variable */
+            function callbackTextSearch(results, status) {
+			    console.log("CallBack executing");
+			    if (status == google.maps.places.PlacesServiceStatus.OK) {
+			        console.log("Found places number: " + results.length);
+			        for (var i = 0; i < results.length; i++) {
+			            var place = results[i];
+			            createMarker(results[i]); // createMarker function is defined below
+			        }
+
+			        google.maps.event.addListener(circle, 'click', function () {
+			            infoWindow.setContent("There are " + results.length + "restaurant in this circle.");
+			            infoWindow.open(map, circle);
+			        }
+                );
+                    
+			    }
+			}
+
+            /* puts a marker on map, by the data in "place" variable.
+            The type of "place" variable is google.maps.places.PlaceResult, BTW */
+			function createMarker(place) {
+			    console.log("createMarker executing");
+			    console.log("The plece_id of this place is:");
+			    console.log(place.place_id);
+			    var placeLoc = place.geometry.location;
+			    var marker = new google.maps.Marker({ position: placeLoc, map: map });
+
+			    /* Adds event listener and the function triggered from the event. */
+			    google.maps.event.addListener(marker, 'click', function () {
+			        infoWindow.setContent(place.name);
+			        infoWindow.open(map, this);
+			        }
+                );
+
+			}
+
+		</script>
+		<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTY9_D-b0lwZgQnktnPRbWdNnM8R95GXk&callback=initMap&libraries=places"></script>
+        <!-- In src attribute, add some variables to set the action of google map.
+            callback=*** means "executes method *** after loading this page".
+            libraries=places means "load places library to use PlacesService". -->
+	</body>
+</html>

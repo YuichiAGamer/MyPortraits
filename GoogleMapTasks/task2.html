@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			#map {
+				height: 400px;
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<h3>Map around Tokyo Station</h3>
+		<div id="map"></div><!-- Here the map is added by Javascript below -->
+		<script>
+
+            /* defines "map" and "infoWindow" variable at here, in order to keep the scope for multiple functions.  */
+            var map;
+            var infoWindow;
+            var foundPlaces = new Array();
+
+            /* These variables are also needed to retrieve the data in callback functions. */
+            var detailedInfo;
+
+            function initMap() {
+                console.log("initMap() executing");
+
+				/* Defines the latitude(north/south) and the longitude(east/west) */
+				var tokyoStation = {lat: 35.681265, lng: 139.767051};
+				/* Instantiates the map with some variables */
+				map = new google.maps.Map(
+					document.getElementById('map'),
+					{ zoom: 15, center: tokyoStation });
+
+                /* Creates Infowindow to display the information of each marker.
+                When each marker is put, the function will be implemented */
+				infoWindow = new google.maps.InfoWindow();
+
+			    /* In order to execute a searching for restaurant, PlacesService is effective.
+                To execute this, prepare the request contents defined by json style */
+				var restaurantRequest = { location: tokyoStation, radius: 100, query: 'ƒŒƒXƒgƒ‰ƒ“' };
+
+                /* Instantiates service and executes */
+				var service = new google.maps.places.PlacesService(map);
+				service.textSearch(restaurantRequest, callbackTextSearch); // callback function is defined below
+
+			    /* See below to confirm the detailed specification of PlacesService:
+                https://developers.google.com/maps/documentation/javascript/reference?hl=ja#PlacesService */
+
+			}
+
+            /* receives the result of textSearch() in "results" and "status" variable */
+            function callbackTextSearch(results, status) {
+			    console.log("CallBack executing");
+			    if (status == google.maps.places.PlacesServiceStatus.OK) {
+			        console.log("Found places number: " + results.length);
+			        for (var i = 0; i < results.length; i++) {
+			            foundPlaces.push(results[i]);
+			            console.log("Result is:");
+			            console.log(JSON.stringify(results[i]));
+			            createMarker(results[i]); // createMarker function is defined below
+			        }
+			    }
+			}
+
+            /* puts a marker on map, by the data in "place" variable.
+            If this place does not contains "bakery", "bar", "cafe", "food", "restaurant" types, 
+            then it is not placed on map. */
+			function createMarker(place) {
+			    console.log("createMarker executing");
+			    console.log(JSON.stringify(place));
+			    console.log("The types of this place is:");
+			    console.log(JSON.stringify(place.types));
+
+			    /* Confirms whether this place contains appropriate type */
+			    if ((place.types.indexOf("bakery") < 0) &&
+                    (place.types.indexOf("bar") < 0) &&
+                    (place.types.indexOf("cafe") < 0) &&
+                    (place.types.indexOf("food") < 0) &&
+                    (place.types.indexOf("restaurant") < 0)) {
+			        console.log("This place is does not have food specialty");
+			        return;
+			    }
+
+			    var placeLoc = place.geometry.location;
+			    var marker = new google.maps.Marker({ position: placeLoc, map: map });
+
+			    /* Adds event listener and the function triggered from the event.
+                displayingText contains name and its specialty. */
+			    google.maps.event.addListener(marker, 'click', function () {
+			        var displayingText = "<p>Name: " + place.name + "</p>";
+			        displayingText = displayingText.concat("<p>Specialty: ");
+			        if (place.types.length <= 0) {
+			            displayingText = displayingText.concat("None.");
+			        } else {
+			            for (var i = 0; i < place.types.length; i++) {
+			                if (i != 0) {
+			                    displayingText = displayingText.concat(", ");
+			                }
+			                displayingText = displayingText.concat(place.types[i]);
+			            }
+			        }
+			        displayingText = displayingText.concat("</p>");
+			        infoWindow.setContent(displayingText);
+			        infoWindow.open(map, this);
+			        }
+                );
+
+			}
+
+		</script>
+		<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTY9_D-b0lwZgQnktnPRbWdNnM8R95GXk&callback=initMap&libraries=places"></script>
+        <!-- In src attribute, add some variables to set the action of google map.
+            callback=*** means "executes method *** after loading this page".
+            libraries=places means "load places library to use PlacesService". -->
+	</body>
+</html>

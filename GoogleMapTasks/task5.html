@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			#map {
+				height: 400px;
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<h3>Map around Tokyo Station</h3>
+		<div id="map"></div><!-- Here the map is added by Javascript below -->
+		<script>
+
+            /* defines "map" and "infoWindow" variable at here, in order to keep the scope for multiple functions.  */
+            var map;
+            var infoWindow;
+            var currentPosition;
+
+            /* Hard-coded this as a sample destination. This restaurant is "ƒŒƒXƒgƒ‰ƒ““ú–{‹´Œj" */
+            var destination = { "lat": 35.6865832, "lng": 139.7752977 };
+
+            /* These are used to display the route. */
+            var directionsDisplay;
+
+            function initMap() {
+                console.log("initMap() executing");
+
+                /* Initialization */
+                directionsDisplay = new google.maps.DirectionsRenderer();
+
+				/* Defines the latitude(north/south) and the longitude(east/west) */
+				var tokyoStation = {lat: 35.681265, lng: 139.767051};
+				/* Instantiates the map with some variables */
+				map = new google.maps.Map(
+					document.getElementById('map'),
+					{ zoom: 15, center: tokyoStation });
+
+                /* Sets direction display */
+				directionsDisplay.setMap(map);
+
+                /* Creates Infowindow to display the information of each marker.
+                When each marker is put, the function will be implemented */
+				infoWindow = new google.maps.InfoWindow();
+
+                /* Gets current position */
+				getCurrentPosition();
+
+            }
+
+            function getCurrentPosition() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function (position) {
+                        var pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        infoWindow.setPosition(pos);
+                        infoWindow.setContent('Location found.');
+                        map.setCenter(pos);
+
+                        currentPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        /* Puts the markers to currentPosition and destination */
+                        createMarker(currentPosition, "Current position");
+                        createMarker(destination, "Destination");
+
+                        /* Calculates the route */
+                        calcRoute(currentPosition, destination);
+
+                    }, function () {
+                        handleLocationError(true, infoWindow, map.getCenter());
+                    });
+                } else {
+                    // Browser doesn't support Geolocation
+                    handleLocationError(false, infoWindow, map.getCenter());
+                    return;
+                }
+
+            }
+
+            function calcRoute(origin, destination) {
+                var request = {
+                    origin: origin,
+                    destination: destination,
+                    travelMode: google.maps.DirectionsTravelMode.DRIVING
+                };
+                directionsService = new google.maps.DirectionsService();
+                directionsService.route(request, function (response, status) {
+                    if (status == 'OK') {
+                        directionsDisplay.setDirections(response);
+                    }
+                });
+            }
+
+            function createMarker(place, message) {
+                console.log("createMarker executing");
+                console.log(JSON.stringify(place));
+                var marker = new google.maps.Marker({ position: place, map: map });
+
+                google.maps.event.addListener(marker, 'click', function () {
+                    infoWindow.setContent(message);
+                    infoWindow.open(map, this);
+                }
+                );
+            }
+
+
+            function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+                infoWindow.setPosition(pos);
+                infoWindow.setContent(browserHasGeolocation ?
+                                      'Error: The Geolocation service failed.' :
+                                      'Error: Your browser doesn\'t support geolocation.');
+            }
+		</script>
+		<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTY9_D-b0lwZgQnktnPRbWdNnM8R95GXk&callback=initMap&libraries=places"></script>
+        <!-- In src attribute, add some variables to set the action of google map.
+            callback=*** means "executes method *** after loading this page".
+            libraries=places means "load places library to use PlacesService". -->
+	</body>
+</html>
